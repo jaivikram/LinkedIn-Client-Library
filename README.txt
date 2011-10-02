@@ -56,11 +56,19 @@ That's it!  You can use this access token for every request this particular user
 Search Businesses
 -----------------
 
+def search_company(self, access_token, universal_name=None, email_domain=None)
+- where atleast one of email_domain or universal_name is required.
+
+def get_company_profile(self, access_token, rid, selectors=[], **kwargs)
+- where rid (linkedin resource id) of the company is required.
+
+e.g.:
+
 >>> api.search_company(access_token, email_domain='apple.com')
 
 [{'rid': '162479', 'name': 'Apple Inc.'}, {'rid': '1276', 'name': 'Apple Retail'}]
 
->>> o = api.get_company_profile(access_token, rid=1337)
+>>> o = api.get_company_profile(access_token, 1337)
 
 >>> print(o.name, o.ticker, o.website_url, o.twitter_id, o.logo_url, o.industry)
 ('LinkedIn', 'LNKD', 'http://www.linkedin.com', 'linkedin', 'http://media.linkedin.com/mpr/mpr/p/3/000/0c2/1d7/1894403.png', 'Internet')

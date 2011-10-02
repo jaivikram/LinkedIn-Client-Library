@@ -1,3 +1,7 @@
+For specific documentation of this Fork, scroll down below to the section - "Search Businesses"
+
+===========================
+
 This branch now includes a fair number of pull requests from PhilGo20 to help with the updates LinkedIn made to their search API, as well as some minor bug fixes.
 
 Big thanks go out to Phil for helping out!
@@ -46,3 +50,61 @@ To get started:
      access_token = APIClient.get_access_token(request_token, oauth_verifier)
 
 That's it!  You can use this access token for every request this particular user makes, for as long as they have authorized you to use it.
+
+=========================================================================================
+
+Search Businesses
+-----------------
+
+>>> api.search_company(access_token, email_domain='apple.com')
+
+[{'rid': '162479', 'name': 'Apple Inc.'}, {'rid': '1276', 'name': 'Apple Retail'}]
+
+>>> o = api.get_company_profile(access_token, rid=1337)
+
+>>> print(o.name, o.ticker, o.website_url, o.twitter_id, o.logo_url, o.industry)
+('LinkedIn', 'LNKD', 'http://www.linkedin.com', 'linkedin', 'http://media.linkedin.com/mpr/mpr/p/3/000/0c2/1d7/1894403.png', 'Internet')
+
+>>> from pprint import pprint
+
+>>> pprint(o.locations)
+[{'city': 'Mountain View',
+  'country_code': 'us',
+  'is_headquarters': 'true',
+  'phone': None,
+  'state': 'CA',
+  'street1': '2029 Stierlin Court',
+  'street2': None,
+  'zipcode': '94043'},
+ {'city': 'Omaha',
+  'country_code': 'us',
+  'is_headquarters': 'false',
+  'phone': '(402) 452-2320',
+  'state': 'NE',
+  'street1': '2126 N 117th Ave',
+  'street2': None,
+  'zipcode': '68164'},
+ {'city': 'Belmont',
+  'country_code': 'us',
+  'is_headquarters': 'false',
+  'phone': None,
+  'state': 'MA',
+  'street1': '15 Shady Brook Lane',
+  'street2': None,
+  'zipcode': '02478'},
+ {'city': 'San Francisco',
+  'country_code': 'us',
+  'is_headquarters': 'false',
+  'phone': None,
+  'state': 'CA',
+  'street1': '450 Sansome Street',
+  'street2': 'Suite 650',
+  'zipcode': '94111'},
+ {'city': 'Belmont',
+  'country_code': 'us',
+  'is_headquarters': 'false',
+  'phone': None,
+  'state': 'MA',
+  'street1': '15 Shady Brook Lane',
+  'street2': None,
+  'zipcode': '94301'}]

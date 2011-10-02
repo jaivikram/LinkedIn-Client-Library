@@ -8,6 +8,10 @@ from parsers.lixml import LinkedInXMLParser
 from lxml import etree
 from lxml.builder import ElementMaker
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger('liclient')
+
 class LinkedInAPI(object):
     def __init__(self, ck, cs):
         self.consumer_key = ck
@@ -16,6 +20,7 @@ class LinkedInAPI(object):
         self.api_profile_url = 'http://api.linkedin.com/v1/people/~'
         self.api_profile_connections_url = 'http://api.linkedin.com/v1/people/~/connections'
         self.api_network_update_url = 'http://api.linkedin.com/v1/people/~/network'
+        self.api_company_search_url = 'http://api.linkedin.com/v1/companies'
         self.api_comment_feed_url = 'http://api.linkedin.com/v1/people/~/network/updates/' + \
                                         'key={NETWORK UPDATE KEY}/update-comments'
         self.api_update_status_url = 'http://api.linkedin.com/v1/people/~/current-status'
@@ -120,7 +125,48 @@ class LinkedInAPI(object):
         resp, content = client.request(url, 'GET')
         content = self.clean_dates(content)
         return LinkedInXMLParser(content).results
-        
+
+    def search_company(self, access_token, universal_name=None, email_domain=None):
+        """Search Linkedin for companies. Need authenticated user to search on behalf of.
+        Valid keyword arguments are "universal_name" and "email_domain".
+        The API might return more than one companies.
+        The returned object is of the form
+        [{'rid': <rid>, 'name': <name>}, . . . . ]
+        """
+        try:
+            assert ( universal_name or email_domain )
+        except AssertionError:
+            raise AssertionError('either of a universal_name or email_domain is required to search companies')
+        if email_domain:
+            url = self.api_company_search_url
+            user_token, url = self.prepare_request(access_token, url, {'email-domain': email_domain})
+        elif universal_name:
+            url = "%s/universal-name=%s" % (self.api_company_search_url, universal_name)
+            user_token, url = self.prepare_request(access_token, url)
+        client = oauth.Client(self.consumer, user_token)
+        resp, content = client.request(url, 'GET')
+        return LinkedInXMLParser(content).results
+
+    def get_company_profile(self, access_token, rid, selectors=[], **kwargs):
+        """Get a company profile from Linkedin given its reource id (rid).
+        The required positional argument 'access_token' and  'rid'.
+        Optional keyword argument is selectors. refer: https://developer.linkedin.com/documents/company-lookup-api-and-fields
+        The returned object has attributes names as selectors.                
+        """
+        if selectors == []:
+            selectors = ['name', 'ticker', 'website-url', 
+                         'twitter-id', 'logo-url','industry', 
+                         'locations:(is-headquarters,address:(street1,street2,city,state,postal-code,country-code),contact-info:(phone1))',
+                         ]
+        user_token, url = self.prepare_request(
+            access_token, 
+            "%s/%s" % ( self.api_company_search_url, str(rid)), 
+            kwargs)
+        client = oauth.Client(self.consumer, user_token)
+        url = self.prepare_field_selectors(selectors, url)
+        resp, content = client.request(url, 'GET')
+        return LinkedInXMLParser(content).results
+    
     def get_comment_feed(self, access_token, network_key):
         """
         Get a comment feed for a particular network update.  Requires the update key
@@ -173,7 +219,7 @@ class LinkedInAPI(object):
         srch = LinkedInSearchAPI(data, access_token, field_selector_string)
         client = oauth.Client(self.consumer, srch.user_token)
         rest, content = client.request(srch.generated_url, method='GET')
-        # print content # useful for debugging...
+        log.debug(str(content)) # useful for debugging...
         return LinkedInXMLParser(content).results
     
     def send_message(self, access_token, recipients, subject, body):
@@ -228,7 +274,7 @@ class LinkedInAPI(object):
                 else:
                     prep_url = self.append_sequential_arg(k, kws[k], prep_url)
         prep_url = re.sub('&&', '&', prep_url)
-        print prep_url
+        log.debug(prep_url)
         return user_token, prep_url
     
     def append_id_args(self, ids, prep_url):
@@ -267,7 +313,7 @@ class LinkedInAPI(object):
         selector_string = selector_string.strip(',')
         selector_string += ')'
         prep_url += selector_string
-        print prep_url
+        log.debug(prep_url)
         return prep_url
     
     def check_network_code(self, code):
@@ -374,7 +420,7 @@ class LinkedInSearchAPI(LinkedInAPI):
             'sort_criteria': self.sort_criteria
         }
         self.user_token, self.generated_url = self.do_process(access_token, params)
-        print "url:", self.generated_url
+        log.debug("url: %s" % self.generated_url)
     
     def do_process(self, access_token, params):
         assert type(params) == type(dict()), 'The passed parameters to the Search API must be a dictionary.'

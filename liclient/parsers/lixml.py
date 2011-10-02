@@ -16,7 +16,10 @@ class LinkedInXMLParser(object):
             'education': self.__parse_education,
             'people': self.__parse_people_collection,
             'twitter-account': self.__parse_twitter_accounts,
-            'member-url': self.__parse_member_url_resources
+            'member-url': self.__parse_member_url_resources,
+            'companies': self.__parse_companies,
+            'company': self.__parse_company,
+
         }
         self.tree = etree.fromstring(content)
         self.root = self.tree.tag
@@ -66,6 +69,14 @@ class LinkedInXMLParser(object):
         content = LinkedInMemberUrlResourceParser(tree).results
         return content
     
+    def __parse_companies(self, tree):
+        content = LinkedInCompaniesParser(tree).results
+        return content
+    
+    def __parse_company(self, tree):
+        content = LinkedInCompanyParser(tree).results
+        return content
+
     def __parse_people_collection(self, tree):
         ppl, n = tree.getchildren()
         result_count = int(n.text)
@@ -373,3 +384,38 @@ class LinkedInSkillsParser(LinkedInXMLParser):
         results = mappers.Skills(data, tree)
         return results
         
+class LinkedInCompaniesParser(LinkedInXMLParser):
+    def __init__(self, content):
+        self.tree = content
+        self.xpath_collection = {
+            'companies': etree.XPath('company'),
+            }
+        self.results = self.__build_data(self.tree)
+        
+    def __build_data(self, tree):
+        data = {}
+        results = mappers.Companies(data, tree).companies
+        return results
+    
+class LinkedInCompanyParser(LinkedInXMLParser):
+    def __init__(self, content):
+        self.tree = content
+        self.xpath_collection = {
+            'name': etree.XPath('name'),
+            'ticker': etree.XPath('ticker'),
+            'website_url': etree.XPath('website-url'),
+            'twitter_id': etree.XPath('twitter-id'),
+            'logo_url': etree.XPath('logo-url'),
+            'industry': etree.XPath('industry'),
+            }
+        self.results = self.__build_data(self.tree)
+        
+    def __build_data(self, tree):
+        data = dict(
+            [(re.sub('-','_',key),self.xpath_collection[key](tree)[0].text) 
+             for key in self.xpath_collection 
+             if len(self.xpath_collection[key](tree)) > 0]
+            )
+        results = mappers.Company(data, tree)
+        return results
+

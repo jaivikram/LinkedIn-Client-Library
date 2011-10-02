@@ -300,3 +300,47 @@ class Skills(LinkedInData):
     
 class MemberUrlResource(LinkedInData):
     pass
+
+class Companies(LinkedInData):
+    def __init__(self, data, xml):
+        self.xml = xml
+        self.parse_data(data)
+        self.companies = []
+        self.get_companies()
+
+    def get_companies(self):
+        company_xpath = etree.XPath('company')
+        companies = company_xpath(self.xml)
+        for company in companies:
+            self.companies.append({
+                    'name': company.xpath('name')[0].text,
+                    'rid': company.xpath('id')[0].text,
+                    })
+
+class Company(LinkedInData):
+    def __init__(self, data, xml):
+        self.xml = xml
+        self.parse_data(data)
+        self.locations = []
+        self.get_locations()
+
+    def get_locations(self):
+        location_xpath = etree.XPath('locations/location')
+        locations = location_xpath(self.xml)
+        for location in locations:
+            loc = {
+                'street1': location.xpath('address/street1'),
+                'street2': location.xpath('address/street2'),
+                'city': location.xpath('address/city'),
+                'state': location.xpath('address/state'),
+                'zipcode': location.xpath('address/postal-code'),
+                'country_code': location.xpath('address/country-code'),
+                'phone': location.xpath('contact-info/phone1'),
+                'is_headquarters': location.xpath('is-headquarters'),
+                }
+            for k,v in loc.items():
+                if len(v):
+                    loc[k] = v[0].text
+                else:
+                    loc[k] = None
+            self.locations.append(loc)
